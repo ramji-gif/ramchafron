@@ -169,7 +169,7 @@
       }
 
       console.log(`🔗 Connecting as ${deviceId} (${s} → ${t})`);
-      ws = new WebSocket(`wss://voice-translator-backend-2d4s.onrender.com/ws/${s}/${t}/${deviceId}`);
+      ws = new WebSocket(`wss://ram-backend-umtn.onrender.com/ws/${s}/${t}/${deviceId}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -209,7 +209,7 @@
       const tgtLang = tgt.value;
 
       try {
-        const response = await fetch("https://voice-translator-backend-2d4s.onrender.com/translate/", {
+        const response = await fetch("https://ram-backend-umtn.onrender.com/translate/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
