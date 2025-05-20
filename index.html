@@ -145,6 +145,7 @@
     #recordingStatus {
       color: #ff4d4d;
       font-weight: bold;
+      margin-left: 15px;
     }
   </style>
 </head>
@@ -180,38 +181,37 @@
     </div>
 
     <!-- Speech Translator Section -->
-    <!-- Speech Translator Section -->
-<div id="speechMode" class="hidden">
-  <label for="deviceId">Device ID</label>
-  <input type="text" id="deviceId" placeholder="e.g. device1" />
+    <div id="speechMode" class="hidden">
+      <label for="deviceId">Device ID</label>
+      <input type="text" id="deviceId" placeholder="e.g. device1" />
 
-  <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
-  <div style="flex: 1;">
-    <label for="srcSpeechLang">From Language</label>
-    <select id="srcSpeechLang"></select>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <label for="srcSpeechLang">From Language</label>
+          <select id="srcSpeechLang"></select>
+        </div>
+
+        <div>
+          <button id="swapSpeechBtn" title="Swap languages" style="margin-top: 25px;">🔁</button>
+        </div>
+
+        <div style="flex: 1;">
+          <label for="tgtSpeechLang">To Language</label>
+          <select id="tgtSpeechLang"></select>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button onclick="connectWS()">🔗 Connect</button>
+        <button id="speakBtn" disabled onclick="toggleRecording()">🎤 Start Recording</button>
+        <span id="recordingStatus"></span>
+        <button id="listenBtn" disabled onclick="replayAudio()">🔈 Listen</button>
+      </div>
+
+      <audio id="audioPlayer" controls></audio>
+    </div>
+
   </div>
-
-  <div>
-    <button id="swapSpeechBtn" title="Swap languages" style="margin-top: 25px;">🔁</button>
-  </div>
-
-  <div style="flex: 1;">
-    <label for="tgtSpeechLang">To Language</label>
-    <select id="tgtSpeechLang"></select>
-  </div>
-</div>
-
-
-  <div style="margin-top: 20px;">
-    <button onclick="connectWS()">🔗 Connect</button>
-    <button id="speakBtn" disabled onclick="toggleRecording()">🎤 Start Recording</button>
-    <span id="recordingStatus"></span>
-    <button id="listenBtn" disabled onclick="replayAudio()">🔈 Listen</button>
-  </div>
-
-  <audio id="audioPlayer" controls></audio>
-</div>
-
 
   <script>
     const langs = [
@@ -233,7 +233,7 @@
     });
 
     let isRecording = false;
-    let recorder, stream, ws, timer;
+    let recorder, stream, ws;
     const speakBtn = document.getElementById("speakBtn");
     const listenBtn = document.getElementById("listenBtn");
     const recordingStatus = document.getElementById("recordingStatus");
@@ -250,13 +250,17 @@
       const tgt = tgtTextLang.value;
       if (!text) return alert("Enter text to translate.");
 
-      const res = await fetch("https://ramu-back.onrender.com/translate-only/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, source_lang: src, target_lang: tgt })
-      });
-      const data = await res.json();
-      document.getElementById("outputText").value = data.translated_text || data.error || "Failed";
+      try {
+        const res = await fetch("https://ramu-back.onrender.com/translate-only/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, source_lang: src, target_lang: tgt })
+        });
+        const data = await res.json();
+        document.getElementById("outputText").value = data.translated_text || data.error || "Failed";
+      } catch (e) {
+        alert("Translation service error.");
+      }
     }
 
     function connectWS() {
@@ -266,7 +270,6 @@
       if (!deviceId) return alert("Enter a device ID");
 
       ws = new WebSocket(`wss://ramu-back.onrender.com/ws/${src}/${tgt}/${deviceId}`);
-);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -286,22 +289,37 @@
       ws.onclose = () => {
         speakBtn.disabled = true;
         listenBtn.disabled = true;
+        recordingStatus.textContent = "";
+      };
+
+      ws.onerror = err => {
+        alert("WebSocket error, check connection.");
+        console.error(err);
       };
     }
 
     async function toggleRecording() {
       if (!isRecording) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+          alert("Microphone access denied.");
+          return;
+        }
+
         recorder = new MediaRecorder(stream);
         let chunks = [];
         recorder.ondataavailable = e => chunks.push(e.data);
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: "audio/webm" });
-          ws.send(blob);
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(blob);
+          }
           speakBtn.textContent = "🎤 Start Recording";
           recordingStatus.textContent = "";
           stream.getTracks().forEach(t => t.stop());
           isRecording = false;
+          chunks = [];
         };
         recorder.start();
         isRecording = true;
@@ -315,15 +333,15 @@
     function replayAudio() {
       if (audioPlayer.src) audioPlayer.play();
     }
-// Swap languages in speech mode
-document.getElementById("swapSpeechBtn").onclick = () => {
-  const temp = srcSpeechLang.value;
-  srcSpeechLang.value = tgtSpeechLang.value;
-  tgtSpeechLang.value = temp;
-  console.log(`🔁 Swapped speech: ${srcSpeechLang.value} → ${tgtSpeechLang.value}`);
-};
 
-
+    // Swap languages in speech mode
+    document.getElementById("swapSpeechBtn").onclick = () => {
+      const temp = srcSpeechLang.value;
+      srcSpeechLang.value = tgtSpeechLang.value;
+      tgtSpeechLang.value = temp;
+      console.log(`🔁 Swapped speech: ${srcSpeechLang.value} → ${tgtSpeechLang.value}`);
+    };
   </script>
 </body>
 </html>
+
