@@ -265,7 +265,7 @@
       const deviceId = document.getElementById("deviceId").value.trim();
       if (!deviceId) return alert("Enter a device ID");
 
-      ws = new WebSocket(`wss://ramco-back.onrender.com/ws/${src}/${tgt}/${deviceId}`);
+      ws = new WebSocket("wss://ramco-back.onrender.com/ws/${src}/${tgt}/${deviceId}");
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
