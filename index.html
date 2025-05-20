@@ -267,9 +267,8 @@
       const src = srcSpeechLang.value;
       const tgt = tgtSpeechLang.value;
       const device_id = document.getElementById("deviceId").value.trim();
-      if (!deviceId) return alert("Enter a device ID");
-
-      ws = new WebSocket(`wss://ramu-back.onrender.com/ws/${src}/${tgt}/${deviceId}`);
+      if (!device_id) return alert("Enter a device ID");
+      ws = new WebSocket(`wss://ramu-back.onrender.com/ws/${src}/${tgt}/${device_id}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
