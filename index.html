@@ -250,7 +250,7 @@
       const tgt = tgtTextLang.value;
       if (!text) return alert("Enter text to translate.");
 
-      const res = await fetch("https://ramco-back.onrender.com/translate-only/", {
+      const res = await fetch("https://ramu-back.onrender.com/translate-only/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, source_lang: src, target_lang: tgt })
@@ -265,7 +265,7 @@
       const deviceId = document.getElementById("deviceId").value.trim();
       if (!deviceId) return alert("Enter a device ID");
 
-      ws = new WebSocket("wss://ramco-back.onrender.com/ws/${src}/${tgt}/${deviceId}");
+      ws = new WebSocket("wss://ramu-back.onrender.com/ws/${src}/${tgt}/${deviceId}");
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
